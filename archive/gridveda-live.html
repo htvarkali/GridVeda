@@ -1,0 +1,2184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridVeda — Live | NVIDIA Edge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void:#0a0b10;--bg-0:#0e1017;--bg-1:#151821;--bg-2:#1a1e2a;--bg-3:#222736;--bg-4:#2c3244;
+  --nvidia:#76b900;--nvidia-dim:rgba(118,185,0,.12);
+  --cyan:#00bfff;--cyan-dim:rgba(0,191,255,.1);
+  --amber:#ffb300;--amber-dim:rgba(255,179,0,.1);
+  --red:#ff4757;--red-dim:rgba(255,71,87,.1);
+  --green:#00e676;--green-dim:rgba(0,230,118,.1);
+  --text-0:#e8eaf0;--text-1:#c0c4d0;--text-2:#8890a4;--text-3:#5c6378;
+  --border:rgba(255,255,255,.07);--border-h:rgba(255,255,255,.14);
+  --r:10px;--r-lg:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg-void);color:var(--text-0);line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ambient::before{content:'';position:absolute;top:-20%;left:-10%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(118,185,0,.08) 0%,transparent 70%);animation:dr 25s ease-in-out infinite alternate}
+.ambient::after{content:'';position:absolute;bottom:-15%;right:-10%;width:55%;height:55%;background:radial-gradient(ellipse,rgba(0,191,255,.06) 0%,transparent 70%);animation:dr 20s ease-in-out infinite alternate-reverse}
+@keyframes dr{0%{transform:translate(0,0) scale(1)}100%{transform:translate(5%,3%) scale(1.1)}}
+
+.grid-ov{position:fixed;inset:0;background-image:linear-gradient(rgba(118,185,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(118,185,0,.04) 1px,transparent 1px);background-size:80px 80px;pointer-events:none;z-index:0}
+
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;background:rgba(10,11,16,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.brand{display:flex;align-items:center;gap:.6rem}
+.brand-bolt{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--nvidia),#76b900);display:flex;align-items:center;justify-content:center;font-size:1rem;box-shadow:0 2px 8px rgba(118,185,0,.3)}
+.brand-name{font-family:Outfit,sans-serif;font-weight:700;font-size:1.15rem}
+.brand-tag{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--nvidia);padding:2px 7px;border-radius:4px}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{background:none;border:none;color:var(--text-2);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.nav-tab:hover{color:var(--text-0);background:var(--bg-3)}
+.nav-tab.active{color:var(--nvidia);background:var(--nvidia-dim)}
+
+.live-badge{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text-2)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .3s}
+.live-dot.on{background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:.4;box-shadow:none}}
+.conn-text{font-size:.75rem}
+.tick-num{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--text-3);background:var(--bg-3);padding:2px 7px;border-radius:4px}
+
+.page{position:relative;z-index:1;padding-top:52px}
+.view{display:none;padding:1.25rem;max-width:1520px;margin:0 auto;animation:vi .35s ease-out}
+.view.active{display:block}
+@keyframes vi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.metrics-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:.7rem;margin-bottom:1.25rem}
+.m-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r);padding:.9rem 1rem;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.m-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.6}
+.m-card[data-a="nvidia"]::after{background:var(--nvidia)}.m-card[data-a="cyan"]::after{background:var(--cyan)}.m-card[data-a="green"]::after{background:var(--green)}.m-card[data-a="amber"]::after{background:var(--amber)}
+.m-label{font-size:.65rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem}
+.m-val{font-family:Outfit,sans-serif;font-size:1.55rem;font-weight:700;line-height:1.2}
+.m-val.nvidia{color:var(--nvidia)}.m-val.cyan{color:var(--cyan)}.m-val.green{color:var(--green)}.m-val.amber{color:var(--amber)}.m-val.red{color:var(--red)}
+.m-sub{font-size:.68rem;margin-top:.2rem;color:var(--text-3)}
+.m-sub.up{color:var(--green)}.m-sub.down{color:var(--red)}
+
+.dash-grid{display:grid;grid-template-columns:1fr 340px;gap:1rem}
+.panel{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1rem;border-bottom:1px solid var(--border)}
+.panel-head h3{font-family:Outfit,sans-serif;font-size:.88rem;font-weight:600;display:flex;align-items:center;gap:.4rem}
+.panel-body{padding:.75rem}
+
+.sort-bar{display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--text-3)}
+.s-btn{font-size:.68rem;padding:2px 9px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.s-btn:hover{border-color:var(--nvidia);color:var(--nvidia)}
+.s-btn.on{background:var(--nvidia-dim);border-color:var(--nvidia);color:var(--nvidia)}
+
+.fleet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;padding:.75rem;max-height:440px;overflow-y:auto}
+.xf{background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:.65rem;cursor:pointer;transition:all .2s;position:relative}
+.xf:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,191,255,.12)}
+.xf.warn{border:2px solid var(--amber);background:rgba(255,179,0,.08);box-shadow:0 0 12px rgba(255,179,0,.2)}.xf.crit{border:2px solid var(--red);background:rgba(255,71,87,.08);box-shadow:0 0 12px rgba(255,71,87,.3)}.xf.ok{border-left:3px solid var(--green)}
+.xf-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem}
+.xf-id{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;color:var(--cyan)}
+.xf-dot{width:7px;height:7px;border-radius:50%}
+.xf-dot.ok{background:var(--green)}.xf-dot.warn{background:var(--amber);animation:blink 2s infinite}.xf-dot.crit{background:var(--red);animation:blink 1s infinite}
+.xf-stats{display:flex;justify-content:space-between}
+.xf-s{text-align:center}
+.xf-sv{font-size:.82rem;font-weight:600}
+.xf-sl{font-size:.55rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em}
+
+.al-cnt{font-size:.65rem;background:var(--bg-3);color:var(--text-3);padding:1px 7px;border-radius:4px}
+.alert-list{max-height:260px;overflow-y:auto}
+.al{display:flex;gap:.6rem;padding:.55rem .5rem;border-radius:6px;margin-bottom:.3rem;background:var(--bg-2);transition:background .12s}
+.al:hover{background:var(--bg-3)}
+.al.critical{border-left:3px solid var(--red)}.al.warning{border-left:3px solid var(--amber)}
+.al-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.al-dot.critical{background:var(--red)}.al-dot.warning{background:var(--amber)}
+.al-body{flex:1;min-width:0}
+.al-src{font-size:.62rem;font-weight:600;color:var(--cyan);background:var(--cyan-dim);padding:1px 5px;border-radius:3px;display:inline-block;margin-bottom:2px}
+.al-msg{font-size:.76rem;color:var(--text-1);line-height:1.35}
+.al-time{font-size:.62rem;color:var(--text-3);margin-top:2px}
+
+.asset-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem .5rem;border-bottom:1px solid var(--border)}
+.asset-row:last-child{border-bottom:none}
+.asset-badge{font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:100px}
+.asset-badge.healthy{background:var(--green-dim);color:var(--green)}
+.asset-badge.warning{background:var(--amber-dim);color:var(--amber)}
+
+.chart-box{background:var(--bg-2);border-radius:var(--r);padding:1rem;margin-top:.75rem}
+.chart-title{font-size:.78rem;color:var(--text-2);margin-bottom:.75rem}
+.chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px}
+.chart-bar{flex:1;border-radius:3px 3px 0 0;transition:height .5s cubic-bezier(.22,.61,.36,1)}
+.chart-bar.n{background:linear-gradient(to top,rgba(118,185,0,.2),var(--nvidia))}
+.chart-bar.c{background:linear-gradient(to top,rgba(0,191,255,.15),var(--cyan))}
+
+/* Failure Progression Graph */
+.failure-timeline{min-height:300px;padding:.75rem}
+.timeline-empty{text-align:center;color:var(--text-3);padding:2rem;font-size:.78rem}
+.failure-graph-container{display:flex;flex-direction:column;gap:1rem}
+
+/* History Panel */
+.failure-history{padding:.75rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.65rem}
+.history-item{background:var(--bg-2);border-radius:8px;padding:.65rem;border:1px solid var(--border);cursor:pointer;transition:all .2s;position:relative}
+.history-item:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,191,255,.15)}
+.history-item.failed{border-left:3px solid var(--red)}
+.history-item.resolved{border-left:3px solid var(--green)}
+.history-item.queued{border-left:3px solid var(--amber)}
+.history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.history-xfmr{font-family:'Space Mono',monospace;font-size:.78rem;font-weight:600;color:var(--text-0)}
+.history-badge{font-size:.6rem;padding:2px 6px;border-radius:3px;font-weight:600;text-transform:uppercase}
+.history-badge.failed{background:var(--red-dim);color:var(--red)}
+.history-badge.resolved{background:var(--green-dim);color:var(--green)}
+.history-badge.queued{background:var(--amber-dim);color:var(--amber)}
+.history-info{font-size:.68rem;color:var(--text-3);line-height:1.4}
+.history-time{font-size:.62rem;color:var(--text-3);margin-top:.3rem}
+
+.fg-item{background:var(--bg-1);border-radius:10px;padding:1rem;border:1px solid var(--border);position:relative;overflow:hidden}
+.fg-item.critical{border-color:rgba(255,179,0,.5)}
+.fg-item.failed{border-color:#555;opacity:.75}
+.fg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.fg-xfmr{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:600;color:var(--text-0)}
+.fg-status{font-size:.68rem;color:var(--text-3)}
+.fg-status.failed{color:var(--red)}
+.fg-dismiss{background:var(--bg-3);border:1px solid var(--border);color:var(--text-3);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.65rem;transition:all .15s}
+.fg-dismiss:hover{border-color:var(--red);color:var(--red)}
+.fg-main-grid{display:grid;grid-template-columns:1fr 280px;gap:1rem}
+.fg-graphs{display:grid;grid-template-rows:auto auto;gap:.75rem}
+.fg-canvas-wrapper{background:var(--bg-2);border-radius:8px;padding:.65rem;border:1px solid var(--border);position:relative;cursor:pointer;transition:all .2s}
+.fg-canvas-wrapper:hover{border-color:var(--nvidia);box-shadow:0 2px 8px rgba(118,185,0,.15)}
+.fg-canvas-wrapper::after{content:'🔍 Expand';position:absolute;top:8px;right:8px;font-size:.6rem;color:var(--text-3);background:var(--bg-3);padding:2px 6px;border-radius:3px;opacity:0;transition:opacity .2s}
+.fg-canvas-wrapper:hover::after{opacity:1}
+.fg-canvas-label{font-size:.68rem;color:var(--text-2);margin-bottom:.4rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.fg-canvas{width:100%;display:block}
+.fg-canvas.temp{height:100px}
+.fg-canvas.gas{height:100px}
+.fg-variables-grid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;max-height:230px;overflow-y:auto;padding-right:.3rem}
+.fg-variables-grid::-webkit-scrollbar{width:3px}
+.fg-variables-grid::-webkit-scrollbar-track{background:transparent}
+.fg-variables-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.fg-var-card{background:var(--bg-2);border-radius:6px;padding:.5rem;border-left:2px solid var(--border);transition:all .15s}
+.fg-var-card:hover{border-left-color:var(--cyan)}
+.fg-var-card.critical{border-left-color:var(--red);background:rgba(255,71,87,.08)}
+.fg-var-card.warning{border-left-color:var(--amber)}
+.fg-var-label{font-size:.6rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
+.fg-var-value{font-size:.85rem;font-weight:600;font-family:'Space Mono',monospace;color:var(--text-0)}
+.fg-var-value.critical{color:var(--red)}
+.fg-var-value.warning{color:var(--amber)}
+.fg-var-value.normal{color:var(--green)}
+.fg-legend{display:flex;gap:.5rem;flex-wrap:wrap;font-size:.62rem;margin-top:.4rem;opacity:.8}
+.fg-legend-item{display:flex;align-items:center;gap:.25rem}
+.fg-legend-line{width:14px;height:2px;border-radius:1px}
+.fg-legend-dot{width:8px;height:8px;border-radius:50%}
+.fg-playback{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;background:var(--bg-2);border-radius:6px;font-size:.68rem;border:1px solid var(--border);margin-top:.75rem}
+.fg-playback-bar{flex:1;height:5px;background:var(--bg-3);border-radius:3px;position:relative;cursor:pointer}
+.fg-playback-fill{height:100%;background:linear-gradient(90deg,var(--nvidia),var(--cyan));border-radius:3px;position:relative}
+.fg-playback-marker{position:absolute;top:-3px;right:-3px;width:11px;height:11px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.fg-playback-time{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--text-2);min-width:50px}
+.fg-playback-btn{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.65rem;transition:all .15s}
+.fg-playback-btn:hover{border-color:var(--nvidia);color:var(--nvidia)}
+.fg-playback-btn.active{background:var(--nvidia-dim);border-color:var(--nvidia);color:var(--nvidia)}
+
+.fg-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.75rem}
+.fg-metric{background:var(--bg-2);border-radius:6px;padding:.5rem;text-align:center}
+.fg-metric-label{font-size:.6rem;color:var(--text-3);text-transform:uppercase;margin-bottom:.25rem}
+.fg-metric-value{font-size:.9rem;font-weight:700;font-family:'Space Mono',monospace}
+.fg-metric-value.critical{color:var(--red)}
+.fg-metric-value.warning{color:var(--amber)}
+.fg-metric-value.normal{color:var(--green)}
+
+/* Expanded Graph Modal */
+.graph-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:fadeIn .2s}
+.graph-modal.active{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.graph-modal-content{background:var(--bg-1);border-radius:12px;padding:1.5rem;width:90%;max-width:1400px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.graph-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.graph-modal-title{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--cyan)}
+.graph-modal-close{background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.75rem;transition:all .2s}
+.graph-modal-close:hover{border-color:var(--red);color:var(--red)}
+.graph-modal-body{display:grid;grid-template-columns:1fr;gap:1.25rem}
+.graph-modal-canvas-wrapper{background:var(--bg-2);border-radius:10px;padding:1rem;border:1px solid var(--border)}
+.graph-modal-canvas{width:100%;height:300px;display:block}
+
+.chat-view{display:flex;flex-direction:column;height:calc(100vh - 78px)}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.25rem;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg) var(--r-lg) 0 0}
+.chat-head-left{display:flex;align-items:center;gap:.65rem}
+.chat-head h3{font-family:Outfit,sans-serif;font-size:1rem;font-weight:600}
+.chat-head-sub{font-size:.72rem;color:var(--text-3)}
+.model-pill{font-size:.7rem;font-weight:600;color:var(--nvidia);background:var(--nvidia-dim);padding:4px 10px;border-radius:6px;display:flex;align-items:center;gap:5px}
+.model-pill::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nvidia)}
+
+.quick-row{display:flex;gap:.35rem;padding:.6rem 1rem;background:var(--bg-1);border-left:1px solid var(--border);border-right:1px solid var(--border);overflow-x:auto}
+.q-btn{white-space:nowrap;font-size:.72rem;font-family:'DM Sans',sans-serif;padding:4px 13px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;transition:all .15s}
+.q-btn:hover{border-color:var(--nvidia);color:var(--nvidia)}
+
+.chat-body{flex:1;overflow-y:auto;padding:1rem;background:var(--bg-0);border-left:1px solid var(--border);border-right:1px solid var(--border)}
+.msg{display:flex;gap:.65rem;margin-bottom:.9rem}
+.msg.user{flex-direction:row-reverse}
+.msg-av{width:30px;height:30px;border-radius:8px;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.msg.user .msg-av{background:var(--cyan-dim)}
+.msg-bubble{max-width:78%;background:var(--bg-2);border:1px solid var(--border);padding:.7rem .9rem;border-radius:var(--r);font-size:.86rem;line-height:1.6;white-space:pre-line}
+.msg.user .msg-bubble{background:var(--cyan-dim);border-color:rgba(0,191,255,.15)}
+.msg-bubble strong{color:var(--cyan)}
+.msg-bubble code{background:var(--bg-0);padding:1px 5px;border-radius:3px;font-family:'Space Mono',monospace;font-size:.78rem}
+.msg-meta{font-size:.62rem;color:var(--text-3);margin-top:.3rem;padding:0 4px}
+
+.chat-footer{display:flex;gap:.5rem;padding:.75rem 1rem;background:var(--bg-1);border:1px solid var(--border);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.chat-input{flex:1;background:var(--bg-3);border:1px solid var(--border);color:var(--text-0);padding:.6rem .9rem;border-radius:8px;font-size:.86rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+.chat-input:focus{border-color:var(--nvidia)}
+.chat-input::placeholder{color:var(--text-3)}
+.send-btn{width:42px;height:42px;border-radius:8px;border:none;background:var(--nvidia);color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.send-btn:hover{box-shadow:0 4px 14px rgba(118,185,0,.3)}
+.send-btn:disabled{opacity:.35;cursor:default}
+
+.detail-head{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.back-btn{background:var(--bg-2);border:1px solid var(--border);color:var(--text-2);padding:.45rem .9rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:'DM Sans',sans-serif;transition:all .15s}
+.back-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.detail-name{font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;color:var(--cyan);flex:1}
+.analyze-btn{background:linear-gradient(135deg,var(--nvidia),#76b900);border:none;color:#fff;padding:.55rem 1.1rem;border-radius:8px;font-weight:600;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.analyze-btn:hover{box-shadow:0 4px 14px rgba(118,185,0,.3)}
+.analyze-btn:disabled{opacity:.5}
+
+.sensor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.5rem;margin-bottom:1rem}
+.sensor{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r);padding:.5rem;text-align:center}
+.sensor.warn{border-color:rgba(255,179,0,.3)}
+.sensor.crit{border-color:rgba(255,71,87,.3)}
+.sensor-icon{font-size:2rem;margin-bottom:.5rem}
+.sensor-label{font-size:.75rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
+.sensor-val{font-family:Outfit,sans-serif;font-size:2rem;font-weight:700;margin:.3rem 0}
+.sensor-st{display:inline-block;font-size:.58rem;font-weight:700;padding:1px 7px;border-radius:3px;text-transform:uppercase}
+.sensor-st.ok{background:var(--green-dim);color:var(--green)}.sensor-st.warn{background:var(--amber-dim);color:var(--amber)}.sensor-st.crit{background:var(--red-dim);color:var(--red)}
+
+.dga-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;padding:.75rem}
+.dga{background:var(--bg-2);border-radius:8px;padding:.7rem;text-align:center}
+.dga.warn{border:1px solid rgba(255,179,0,.25)}.dga.crit{border:1px solid rgba(255,71,87,.25)}
+.dga-name{font-size:.82rem;font-weight:600;color:var(--text-2)}.dga-val{font-family:Outfit,sans-serif;font-size:1.05rem;font-weight:700;margin:.2rem 0}
+.dga-bar{height:3px;background:var(--bg-0);border-radius:2px;overflow:hidden;margin:.4rem 0 .2rem}
+.dga-bf{height:100%;border-radius:2px;transition:width .5s}
+.dga-bf.ok{background:var(--green)}.dga-bf.warn{background:var(--amber)}.dga-bf.crit{background:var(--red)}
+.dga-th{display:flex;justify-content:space-between;font-size:.55rem;color:var(--text-3)}
+
+.ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;padding:.75rem}
+.ai-c{background:var(--bg-2);border-radius:8px;padding:.9rem}
+.ai-ct{display:flex;align-items:center;gap:.4rem;font-size:.9rem;font-weight:600;margin-bottom:.6rem}
+.ai-cm{font-size:.6rem;color:var(--text-3);margin-left:auto}
+.ai-f{display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.ai-f:last-child{border-bottom:none}
+.ai-fl{color:var(--text-3)}.ai-fv{font-weight:600}
+
+.diagnostic-scroll{font-size:.7rem;max-height:80px;overflow-y:auto;padding-right:.3rem}
+.diagnostic-scroll::-webkit-scrollbar{width:4px}
+.diagnostic-scroll::-webkit-scrollbar-track{background:var(--bg-3);border-radius:2px}
+.diagnostic-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.diagnostic-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-3)}
+
+.empty{text-align:center;color:var(--text-3);padding:2rem;font-size:.85rem}
+
+.inj-panel .panel-head{border-color:rgba(255,71,87,.15)}
+.inj-tag{font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--red);padding:2px 7px;border-radius:4px}
+.inj-lbl{display:block;font-size:.62rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin:0.6rem 0 .35rem;font-weight:600}
+.inj-target{margin-bottom:0.3rem}
+.inj-select{width:100%;background:var(--bg-2);color:var(--text-0);border:1px solid var(--border);padding:6px 8px;border-radius:6px;font-size:.82rem;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+.inj-select:focus{border-color:var(--red)}
+.fault-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}
+.fault-btn{font-size:.72rem;padding:5px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center}
+.fault-btn:hover{border-color:var(--red);color:var(--red)}
+.fault-btn.on{background:var(--red-dim);border-color:var(--red);color:var(--red);font-weight:600}
+.sev-row{display:flex;align-items:center;gap:8px}
+.sev-slider{flex:1;-webkit-appearance:none;height:4px;background:var(--bg-4);border-radius:2px;outline:none;--thumb-color:var(--amber)}
+.sev-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--thumb-color);cursor:pointer;border:2px solid var(--bg-1)}
+.sev-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--thumb-color);cursor:pointer;border:2px solid var(--bg-1)}
+.sev-val{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;color:var(--red);min-width:36px;text-align:right}
+.inj-fire{width:100%;margin-top:.65rem;padding:8px;border:none;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:.85rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.inj-fire:hover{box-shadow:0 4px 16px rgba(255,71,87,.25)}
+.inj-reset{width:100%;margin-top:.35rem;padding:6px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-2);font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.inj-reset:hover{border-color:var(--text-2);color:var(--text-0)}
+.inj-status{font-size:.72rem;color:var(--text-2);margin-top:.5rem;min-height:1.2rem;text-align:center;line-height:1.4}
+.inj-status.ok{color:var(--green)}.inj-status.err{color:var(--red)}
+
+/* ─── Voice Assistant ─── */
+.voice-panel .panel-head{border-color:rgba(0,191,255,.15)}
+.voice-btns{display:flex;gap:4px}
+.v-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-2);font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.v-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.v-btn.on{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan)}
+.mic-btn.listening{background:var(--red-dim);border-color:var(--red);color:var(--red);animation:mic-pulse 1.2s infinite}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,71,87,.3)}50%{box-shadow:0 0 0 8px rgba(255,71,87,0)}}
+.voice-status{font-size:.78rem;color:var(--text-3);margin-bottom:.4rem;display:flex;align-items:center;gap:6px}
+.voice-status .listening-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+.voice-status .speaking-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blink 0.6s infinite}
+.voice-transcript{font-size:.82rem;color:var(--text-1);padding:.4rem .5rem;background:var(--bg-2);border-radius:6px;margin-bottom:.35rem;min-height:0;display:none}
+.voice-transcript.show{display:block}
+.voice-transcript::before{content:'You: ';color:var(--text-3);font-size:.68rem;font-weight:600}
+.voice-response{font-size:.82rem;color:var(--text-0);padding:.4rem .5rem;background:var(--cyan-dim);border-radius:6px;margin-bottom:.35rem;min-height:0;display:none;line-height:1.5}
+.voice-response.show{display:block}
+.voice-response::before{content:'GridVeda: ';color:var(--cyan);font-size:.68rem;font-weight:600}
+.voice-hints{display:flex;flex-wrap:wrap;gap:4px;margin-top:.3rem}
+.voice-hints .hint{font-size:.62rem;color:var(--text-3);background:var(--bg-2);padding:2px 7px;border-radius:3px}
+
+@media(max-width:1100px){.dash-grid{grid-template-columns:1fr}.metrics-strip{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.view{padding:.75rem}.metrics-strip{grid-template-columns:repeat(2,1fr)}.fleet-grid{grid-template-columns:repeat(2,1fr)}.dga-grid{grid-template-columns:repeat(2,1fr)}.ai-grid{grid-template-columns:1fr}.sensor-grid{grid-template-columns:repeat(2,1fr)}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-0)}::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-3)}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="grid-ov"></div>
+
+<div class="topbar">
+  <div class="brand"><div class="brand-bolt">⚡</div><span class="brand-name">GridVeda</span><span class="brand-tag">NVIDIA LIVE</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="go('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="go('chat')">🤖 Ask Grid</button>
+  </div>
+  <div class="live-badge">
+    <div class="live-dot" id="ws-dot"></div>
+    <span class="conn-text" id="conn-text">Connecting...</span>
+    <span class="tick-num" id="tick-d">T+0</span>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- Graph Expand Modal -->
+<div class="graph-modal" id="graph-modal">
+  <div class="graph-modal-content">
+    <div class="graph-modal-header">
+      <span class="graph-modal-title" id="modal-title">—</span>
+      <button class="graph-modal-close" onclick="closeGraphModal()">✕ Close</button>
+    </div>
+    <div class="graph-modal-body">
+      <div class="graph-modal-canvas-wrapper">
+        <div class="fg-canvas-label" id="modal-label-1">—</div>
+        <canvas id="modal-canvas-1" class="graph-modal-canvas" width="1200" height="300"></canvas>
+        <div class="fg-legend" id="modal-legend-1"></div>
+      </div>
+      <div class="graph-modal-canvas-wrapper">
+        <div class="fg-canvas-label" id="modal-label-2">—</div>
+        <canvas id="modal-canvas-2" class="graph-modal-canvas" width="1200" height="300"></canvas>
+        <div class="fg-legend" id="modal-legend-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="metrics-strip">
+    <div class="m-card" data-a="nvidia"><div class="m-label">Transformers Online</div><div class="m-val nvidia" id="m-on">—/—</div><div class="m-sub up">Operational</div></div>
+    <div class="m-card" data-a="green"><div class="m-label">Fleet Health Score</div><div class="m-val green" id="m-hp">—</div><div class="m-sub up">AI Composite</div></div>
+    <div class="m-card" data-a="amber"><div class="m-label">Active Alerts</div><div class="m-val amber" id="m-al">0</div><div class="m-sub" id="m-als">—</div></div>
+    <div class="m-card" data-a="cyan"><div class="m-label">Renewable Output</div><div class="m-val cyan" id="m-rn">— MW</div><div class="m-sub up">Solar + Wind</div></div>
+    <div class="m-card" data-a="cyan"><div class="m-label">Avg Temperature</div><div class="m-val cyan" id="m-tp">—°C</div><div class="m-sub" id="m-tps">—</div></div>
+    <div class="m-card" data-a="green"><div class="m-label">Avg Load</div><div class="m-val green" id="m-ld">—%</div><div class="m-sub" id="m-lds">—</div></div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>🏭 Transformer Fleet <span style="font-size:.7rem;color:var(--text-3);font-weight:400;margin-left:6px">(live from backend)</span></h3>
+        <div class="sort-bar">Sort:
+          <button class="s-btn on" onclick="setSort('temp',this)">Temp</button>
+          <button class="s-btn" onclick="setSort('load',this)">Load</button>
+          <button class="s-btn" onclick="setSort('oil',this)">Oil</button>
+        </div>
+      </div>
+      <div class="fleet-grid" id="fleet"></div>
+      <div class="chart-box"><div class="chart-title">Grid Load (live stream)</div><div class="chart-bars" id="chart"></div></div>
+      <div class="chart-box" style="margin-top:.75rem">
+        <div class="chart-title">🔥 Active Failure Event</div>
+        <div class="failure-timeline" id="failure-timeline">
+          <div class="timeline-empty">No high-risk units detected — all systems nominal</div>
+        </div>
+      </div>
+      
+      <div class="chart-box" style="margin-top:.75rem;display:none" id="history-box">
+        <div class="chart-title">📋 Event History <span style="font-size:.65rem;color:var(--text-3);font-weight:400;margin-left:6px">(Click to expand)</span></div>
+        <div class="failure-history" id="failure-history"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="panel" style="flex:1"><div class="panel-head"><h3>🔔 AI Alerts</h3><span class="al-cnt" id="al-cnt">0</span></div><div class="panel-body"><div class="alert-list" id="al-list"></div></div></div>
+      <div class="panel"><div class="panel-head"><h3>💚 Asset Health</h3></div><div class="panel-body">
+        <div class="asset-row"><span>Transformers</span><span class="asset-badge healthy">Healthy</span></div>
+        <div class="asset-row"><span>Substations</span><span class="asset-badge healthy">Healthy</span></div>
+        <div class="asset-row"><span>Renewable Sites</span><span class="asset-badge warning">1 Warning</span></div>
+      </div></div>
+
+      <!-- Anomaly Injector -->
+      <div class="panel inj-panel">
+        <div class="panel-head"><h3>🔥 Anomaly Injector</h3><span class="inj-tag">DEMO</span></div>
+        <div class="panel-body">
+          <div class="inj-target">
+            <label class="inj-lbl">Target</label>
+            <select id="inj-xfmr" class="inj-select">
+              <option value="">Select transformer…</option>
+            </select>
+          </div>
+          <label class="inj-lbl">Fault Type</label>
+          <div class="fault-grid" id="fault-grid">
+            <button class="fault-btn on" data-f="thermal" onclick="pickFault(this)">🌡️ Thermal</button>
+            <button class="fault-btn" data-f="discharge" onclick="pickFault(this)">⚡ Discharge</button>
+            <button class="fault-btn" data-f="arcing" onclick="pickFault(this)">💥 Arcing</button>
+            <button class="fault-btn" data-f="partial_discharge" onclick="pickFault(this)">⚗️ Partial</button>
+          </div>
+          <label class="inj-lbl">Severity</label>
+          <div class="sev-row">
+            <input type="range" id="inj-sev" min="10" max="100" value="50" class="sev-slider" oninput="updateSevLabel(this.value)">
+            <span id="sev-val" class="sev-val">50% MED</span>
+          </div>
+          <button class="inj-fire" onclick="fireInjection()">▶ Inject Anomaly</button>
+          <button class="inj-reset" onclick="resetInjections()">↺ Reset All</button>
+          <div class="inj-status" id="inj-status"></div>
+        </div>
+      </div>
+
+      <!-- Voice Assistant -->
+      <div class="panel voice-panel">
+        <div class="panel-head">
+          <h3>🎙️ Voice Control</h3>
+          <div class="voice-btns">
+            <button class="v-btn" id="tts-btn" onclick="toggleTTS()" title="Toggle voice output">🔊</button>
+            <button class="v-btn mic-btn" id="mic-btn" onclick="toggleMic()" title="Toggle microphone">🎤</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="voice-status" id="voice-status">Click 🎤 to start</div>
+          <div class="voice-transcript" id="voice-transcript"></div>
+          <div class="voice-response" id="voice-response"></div>
+          <div class="voice-hints">
+            <span class="hint">"Grid status"</span>
+            <span class="hint">"Inject thermal into 15"</span>
+            <span class="hint">"Which transformers have faults?"</span>
+            <span class="hint">"Reset all faults"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="view" id="view-chat">
+  <div class="chat-view">
+    <div class="chat-head">
+      <div class="chat-head-left"><span style="font-size:1.4rem">🤖</span><div><h3>Ask Grid — <span id="chat-model-name">Nemotron Nano 4B</span></h3><span class="chat-head-sub" id="chat-backend">Connecting to backend...</span></div></div>
+      <div class="model-pill" id="chat-model-pill">Nemotron Nano 4B</div>
+    </div>
+    <div class="quick-row">
+      <button class="q-btn" onclick="qChat('What is the current fleet health status?')">Fleet Status</button>
+      <button class="q-btn" onclick="qChat('Explain the DGA readings and any concerns')">DGA Analysis</button>
+      <button class="q-btn" onclick="qChat('What are the active alerts and recommendations?')">Active Alerts</button>
+    </div>
+    <div class="chat-body" id="cb">
+      <div class="msg"><div class="msg-av">⚡</div><div><div class="msg-bubble"><strong>GridVeda AI</strong> — connected to real FastAPI backend</div><div class="msg-meta">System</div></div></div>
+    </div>
+    <div class="chat-footer">
+      <input class="chat-input" id="ci" placeholder="Ask about grid health, DGA, alerts..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="send-btn" onclick="sendMsg()" id="sb">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="view" id="view-detail">
+  <div class="detail-head">
+    <button class="back-btn" onclick="go('dashboard')">← Back</button>
+    <span class="detail-name" id="d-id">—</span>
+    <span id="d-ts" style="font-size:.72rem;color:var(--text-3)"></span>
+    <button class="analyze-btn" id="a-btn" onclick="runPredict()">🧠 Run Full AI Analysis</button>
+  </div>
+  <div class="sensor-grid" id="s-grid"></div>
+  <div class="panel" style="margin-bottom:1rem"><div class="panel-head"><h3>🧪 Dissolved Gas Analysis (DGA)</h3></div><div class="dga-grid" id="d-grid"></div></div>
+  <div class="panel" id="a-panel" style="display:none"><div class="panel-head"><h3>🧠 AI Pipeline Results <span style="font-size:.7rem;color:var(--text-3);font-weight:400;margin-left:6px">(real backend)</span></h3></div><div class="ai-grid" id="a-grid"></div></div>
+</div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+const WS_URL = 'ws://localhost:8000/ws/telemetry';
+
+let ws = null;
+let readings = {};
+let alerts = [];
+let sortMode = 'temp';
+let selXfmr = null;
+let chatBusy = false;
+let loadHistory = [];
+let failureTracking = {};
+
+function connectWS() {
+  const dot = document.getElementById('ws-dot');
+  const txt = document.getElementById('conn-text');
+
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    dot.classList.add('on');
+    txt.textContent = 'Live';
+    document.getElementById('chat-backend').textContent = 'NVIDIA Local • Backend Live';
+  };
+
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'telemetry') {
+      readings = data.readings;
+
+      const fm = data.fleet_metrics;
+      document.getElementById('tick-d').textContent = `T+${data.tick}`;
+      document.getElementById('m-on').textContent = `${fm.online}/${fm.total_transformers}`;
+      document.getElementById('m-hp').textContent = fm.health_score;
+      document.getElementById('m-rn').textContent = `${fm.renewable_output_mw.toFixed(0)} MW`;
+      document.getElementById('m-tp').textContent = `${fm.avg_temperature.toFixed(1)}°C`;
+      document.getElementById('m-ld').textContent = `${fm.avg_load.toFixed(1)}%`;
+
+      loadHistory.push(fm.avg_load);
+      if (loadHistory.length > 24) loadHistory = loadHistory.slice(-24);
+      renderChart();
+
+      if (data.alerts && data.alerts.length > 0) {
+        const now = Date.now();
+        data.alerts.forEach(a => { a._ts = now; });
+        alerts = [...data.alerts, ...alerts];
+        alerts = alerts.filter(a => (now - (a._ts || now)) < 60000);
+        const seen = new Set();
+        alerts = alerts.filter(a => {
+          const key = `${a.transformer_id}-${a.source}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        alerts = alerts.slice(0, 20);
+        renderAlerts();
+      }
+      document.getElementById('m-al').textContent = alerts.length;
+      document.getElementById('m-als').textContent = `${alerts.filter(a => a.severity === 'critical').length} critical`;
+
+      updateFailureTracking(data.readings);
+      renderFailureTimeline();
+
+      renderFleet();
+
+      if (selXfmr && document.getElementById('view-detail').classList.contains('active')) {
+        renderDetail(selXfmr);
+      }
+    }
+  };
+
+  ws.onclose = () => {
+    dot.classList.remove('on');
+    txt.textContent = 'Reconnecting...';
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function updateFailureTracking(currentReadings) {
+  const now = Date.now();
+  
+  Object.entries(currentReadings).forEach(([id, reading]) => {
+    const temp = reading.temperature_c;
+    const severity = reading.injected_severity || 0;
+    const ett = reading.ett_sensors;
+    const dga = reading.dga;
+    
+    const thermalStress = Math.abs(ett.OT - 62);
+    const totalLoad = ett.HUFL + ett.MUFL + ett.LUFL;
+    const h2 = dga.h2;
+    const c2h2 = dga.c2h2;
+    const totalGas = h2 + dga.ch4 + c2h2 + dga.c2h4 + dga.c2h6;
+    
+    let riskScore = 0;
+    if (temp > 95) riskScore += 40;
+    else if (temp > 85) riskScore += 20 + ((temp - 85) / 10) * 20;
+    else if (temp > 75) riskScore += 10 + ((temp - 75) / 10) * 10;
+    else riskScore += (temp - 60) / 15 * 10;
+    riskScore += (totalLoad / 25) * 20;
+    if (totalGas > 500) riskScore += 30;
+    else if (totalGas > 300) riskScore += 15 + ((totalGas - 300) / 200) * 15;
+    else if (totalGas > 100) riskScore += ((totalGas - 100) / 200) * 15;
+    
+    const isHighRisk = riskScore > 50 || severity > 0.3;
+    
+    if (isHighRisk) {
+      if (!failureTracking[id]) {
+        const xfmrNum = parseInt(id.split('-')[1]);
+        const seedOffset = (xfmrNum * 137) % 500;
+        
+        failureTracking[id] = {
+          detectedAt: now,
+          startTime: now,
+          xfmrNum: xfmrNum,
+          seedOffset: seedOffset,
+          riskLevel: riskScore > 70 ? 'critical' : 'warning',
+          faultType: reading.fault_type || 'thermal',
+          severity: severity,
+          dismissed: false,
+          
+          initial: {
+            OT: ett.OT, HUFL: ett.HUFL, HULL: ett.HULL,
+            MUFL: ett.MUFL, MULL: ett.MULL, LUFL: ett.LUFL, LULL: ett.LULL,
+            h2: dga.h2, ch4: dga.ch4, c2h2: dga.c2h2, c2h4: dga.c2h4, c2h6: dga.c2h6,
+            moisture: reading.moisture_ppm, vibration: reading.vibration_mm_s,
+            powerFactor: reading.power_factor, oilLevel: reading.oil_level_percent
+          },
+          
+          timeline: [],
+          currentIndex: 0,
+          playbackSpeed: 1,
+          isPaused: false,
+          failed: false,
+          failureTime: null,
+          trajectoryGenerated: false,
+          isActive: true,
+          baselineGenerated: false
+        };
+        
+        generateFailureWithBaseline(id);
+      } else {
+        const track = failureTracking[id];
+        track.riskScore = riskScore;
+        track.riskLevel = riskScore > 70 ? 'critical' : 'warning';
+        track.severity = severity;
+        track.isActive = true;
+        
+        const elapsed = (now - track.startTime) / 1000;
+        
+        if (elapsed > 0) {
+          track.timeline.push({
+            time: elapsed,
+            OT: ett.OT, HUFL: ett.HUFL, HULL: ett.HULL,
+            MUFL: ett.MUFL, MULL: ett.MULL, LUFL: ett.LUFL, LULL: ett.LULL,
+            h2: dga.h2, ch4: dga.ch4, c2h2: dga.c2h2, c2h4: dga.c2h4, c2h6: dga.c2h6,
+            moisture: reading.moisture_ppm, vibration: reading.vibration_mm_s,
+            powerFactor: reading.power_factor, oilLevel: reading.oil_level_percent,
+            risk: riskScore,
+            actual: true
+          });
+        }
+        
+        track.currentIndex++;
+        
+        if (!track.failed) {
+          let failureCause = null;
+          let failureMetric = null;
+          
+          if (dga.c2h2 >= 50) {
+            failureCause = 'c2h2_critical';
+            failureMetric = dga.c2h2;
+          } else if (dga.h2 >= 1500) {
+            failureCause = 'h2_critical';
+            failureMetric = dga.h2;
+          } else if (ett.OT >= 110) {
+            failureCause = 'thermal_runaway';
+            failureMetric = ett.OT;
+          } else if (totalGas >= 1200) {
+            failureCause = 'total_gas_critical';
+            failureMetric = totalGas;
+          } else if (riskScore >= 95) {
+            failureCause = 'composite_risk';
+            failureMetric = riskScore;
+          }
+          
+          if (failureCause) {
+            track.failed = true;
+            track.failureTime = now;
+            track.failureCause = failureCause;
+            track.failureMetric = failureMetric;
+          }
+        }
+      }
+    } else {
+      if (failureTracking[id] && failureTracking[id].isActive) {
+        failureTracking[id].isActive = false;
+        failureTracking[id].resolvedAt = now;
+      }
+    }
+  });
+  
+  Object.keys(failureTracking).forEach(id => {
+    const track = failureTracking[id];
+    if (track.dismissed) {
+      delete failureTracking[id];
+    } else if (!track.isActive && track.resolvedAt && (now - track.resolvedAt > 600000)) {
+      delete failureTracking[id];
+    }
+  });
+}
+
+function generateFailureWithBaseline(id) {
+  const track = failureTracking[id];
+  if (track.trajectoryGenerated) return;
+  
+  const xfmrNum = track.xfmrNum;
+  const init = track.initial;
+  
+  const baselineDuration = 600;
+  const baselinePoints = Math.floor(baselineDuration / 1.5);
+  
+  for (let i = 0; i < baselinePoints; i++) {
+    const t = -baselineDuration + (i / baselinePoints) * baselineDuration;
+    
+    const hourlyTrend = Math.sin((t / 3600) * Math.PI * 2) * 0.015;
+    const loadCycle = Math.sin((t / 300) * Math.PI * 2) * 0.025;
+    const microNoise = (Math.sin(t * 0.3 + xfmrNum) * Math.cos(t * 0.17)) * 0.008;
+    
+    const baseFactor = 1 + hourlyTrend + loadCycle + microNoise;
+    
+    track.timeline.push({
+      time: t,
+      OT: init.OT * baseFactor,
+      HUFL: init.HUFL * (baseFactor + loadCycle * 0.3),
+      HULL: init.HULL * (baseFactor - loadCycle * 0.1),
+      MUFL: init.MUFL * (baseFactor + loadCycle * 0.2),
+      MULL: init.MULL * (baseFactor - loadCycle * 0.08),
+      LUFL: init.LUFL * (baseFactor + loadCycle * 0.15),
+      LULL: init.LULL * (baseFactor - loadCycle * 0.06),
+      h2: init.h2 * (1 + microNoise * 0.5),
+      ch4: init.ch4 * (1 + microNoise * 0.4),
+      c2h2: init.c2h2 * (1 + microNoise * 0.3),
+      c2h4: init.c2h4 * (1 + microNoise * 0.4),
+      c2h6: init.c2h6 * (1 + microNoise * 0.3),
+      moisture: init.moisture * (1 + microNoise * 0.2),
+      vibration: init.vibration * (1 + microNoise * 0.25),
+      powerFactor: init.powerFactor * (1 - Math.abs(microNoise) * 0.01),
+      oilLevel: init.oilLevel,
+      risk: 8 + microNoise * 3,
+      actual: false
+    });
+  }
+  
+  generateComplexFailureTrajectory(id);
+  
+  track.baselineGenerated = true;
+}
+
+function generateComplexFailureTrajectory(id) {
+  const track = failureTracking[id];
+  if (track.trajectoryGenerated) return;
+  
+  const faultType = track.faultType;
+  const severity = track.severity;
+  const xfmrNum = track.xfmrNum;
+  const init = track.initial;
+  
+  const phiSeed = xfmrNum * 1.618033988749;
+  const sqrtSeed = xfmrNum * 1.414213562373;
+  const piSeed = xfmrNum * 3.141592653589;
+  const eSeed = xfmrNum * 2.718281828459;
+  
+  let timeToFailure;
+  if (severity > 0.8) {
+    timeToFailure = 1800 + (Math.sin(phiSeed) + 1) * 900;
+  } else if (severity > 0.5) {
+    timeToFailure = 2400 + (Math.sin(phiSeed) + 1) * 1200;
+  } else {
+    timeToFailure = 3000 + (Math.sin(phiSeed) + 1) * 600;
+  }
+  
+  const numPoints = Math.floor(timeToFailure / 1.5);
+  
+  for (let i = 0; i < numPoints; i++) {
+    const t = (i / numPoints) * timeToFailure;
+    const progress = i / numPoints;
+    
+    const incubation = progress < 0.3 ? 
+      Math.pow(progress / 0.3, 2) * 0.15 : 0.15;
+    
+    const acceleration = (progress >= 0.3 && progress < 0.7) ?
+      0.15 + Math.exp((progress - 0.3) * 5) / 148.41 * 0.4 : 
+      (progress >= 0.7 ? 0.55 : 0);
+    
+    const critical = progress >= 0.7 && progress < 0.95 ?
+      0.55 + Math.exp((progress - 0.7) * 8) / 2980.96 * 0.35 :
+      (progress >= 0.95 ? 0.9 : 0);
+    
+    const runaway = progress >= 0.95 ?
+      0.9 + Math.exp((progress - 0.95) * 30) / 403.43 * 0.1 :
+      0;
+    
+    const stageFactor = incubation + acceleration + critical + runaway;
+    
+    const hourCycle = Math.sin((t / 3600) * Math.PI * 2 + piSeed) * 0.03;
+    const loadFluctuation = Math.sin((t / 180) * Math.PI * 2 + sqrtSeed) * 0.04;
+    const thermalInertia = Math.sin((t / 600) * Math.PI * 2 + eSeed) * 0.02;
+    const stochasticNoise = (Math.sin(t * 0.1 + phiSeed) * Math.cos(t * 0.07 + piSeed)) * 0.015;
+    
+    const combinedFactor = stageFactor + hourCycle + loadFluctuation + thermalInertia + stochasticNoise;
+    
+    let tempIncrease;
+    if (faultType === 'thermal') {
+      tempIncrease = combinedFactor * (110 - init.OT) * 1.12;
+    } else if (faultType === 'arcing') {
+      const arcingSpikes = Math.sin(t * 0.05 + eSeed) * 0.08;
+      tempIncrease = (combinedFactor + arcingSpikes) * (112 - init.OT) * 1.08;
+    } else if (faultType === 'partial_discharge') {
+      tempIncrease = combinedFactor * (105 - init.OT) * 0.85;
+    } else {
+      tempIncrease = combinedFactor * (108 - init.OT) * 1.0;
+    }
+    
+    const imbalanceFactor = combinedFactor * 0.8;
+    const HUFL = init.HUFL * (1 + imbalanceFactor * 2.0);
+    const HULL = init.HULL * (1 + imbalanceFactor * 0.2);
+    const MUFL = init.MUFL * (1 + imbalanceFactor * 1.7);
+    const MULL = init.MULL * (1 + imbalanceFactor * 0.25);
+    const LUFL = init.LUFL * (1 + imbalanceFactor * 1.4);
+    const LULL = init.LULL * (1 + imbalanceFactor * 0.3);
+    
+    let h2, ch4, c2h2, c2h4, c2h6;
+    
+    if (faultType === 'thermal') {
+      h2 = init.h2 * (1 + combinedFactor * 3.2);
+      ch4 = init.ch4 * (1 + combinedFactor * 8.5);
+      c2h2 = init.c2h2 * (1 + combinedFactor * 1.2);
+      c2h4 = init.c2h4 * (1 + combinedFactor * 12.0);
+      c2h6 = init.c2h6 * (1 + combinedFactor * 5.5);
+    } else if (faultType === 'arcing') {
+      h2 = init.h2 * (1 + combinedFactor * 6.5);
+      ch4 = init.ch4 * (1 + combinedFactor * 4.2);
+      c2h2 = init.c2h2 * (1 + combinedFactor * 45.0);
+      c2h4 = init.c2h4 * (1 + combinedFactor * 8.5);
+      c2h6 = init.c2h6 * (1 + combinedFactor * 3.0);
+    } else if (faultType === 'partial_discharge') {
+      h2 = init.h2 * (1 + combinedFactor * 35.0);
+      ch4 = init.ch4 * (1 + combinedFactor * 1.5);
+      c2h2 = init.c2h2 * (1 + combinedFactor * 0.8);
+      c2h4 = init.c2h4 * (1 + combinedFactor * 2.0);
+      c2h6 = init.c2h6 * (1 + combinedFactor * 1.2);
+    } else {
+      h2 = init.h2 * (1 + combinedFactor * 7.0);
+      ch4 = init.ch4 * (1 + combinedFactor * 5.5);
+      c2h2 = init.c2h2 * (1 + combinedFactor * 15.0);
+      c2h4 = init.c2h4 * (1 + combinedFactor * 9.0);
+      c2h6 = init.c2h6 * (1 + combinedFactor * 4.5);
+    }
+    
+    const moisture = init.moisture * (1 + combinedFactor * 1.2);
+    const vibration = init.vibration * (1 + combinedFactor * 2.5);
+    const powerFactor = Math.max(0.70, init.powerFactor * (1 - combinedFactor * 0.25));
+    const oilLevel = Math.max(55, init.oilLevel * (1 - combinedFactor * 0.15));
+    
+    const OT = init.OT + tempIncrease;
+    let risk = 0;
+    if (OT > 95) risk += 40;
+    else if (OT > 85) risk += 20 + ((OT - 85) / 10) * 20;
+    else if (OT > 75) risk += 10 + ((OT - 75) / 10) * 10;
+    
+    const totalGas = h2 + ch4 + c2h2 + c2h4 + c2h6;
+    if (totalGas > 500) risk += 30;
+    else if (totalGas > 300) risk += 15;
+    
+    const totalLoad = HUFL + MUFL + LUFL;
+    risk += (totalLoad / 25) * 20;
+    
+    track.timeline.push({
+      time: t,
+      OT, HUFL, HULL, MUFL, MULL, LUFL, LULL,
+      h2, ch4, c2h2, c2h4, c2h6,
+      moisture, vibration, powerFactor, oilLevel,
+      risk: Math.min(100, risk),
+      actual: false
+    });
+  }
+  
+  track.trajectoryGenerated = true;
+  track.projectedFailureTime = timeToFailure;
+}
+
+function renderFailureTimeline() {
+  const container = document.getElementById('failure-timeline');
+  const historyContainer = document.getElementById('failure-history');
+  const historyBox = document.getElementById('history-box');
+  
+  const activeEvents = Object.entries(failureTracking).filter(([id, track]) => track.isActive);
+  const historyEvents = Object.entries(failureTracking).filter(([id, track]) => !track.isActive);
+  
+  const displayedEvent = activeEvents.length > 0 ? activeEvents[0] : null;
+  const queuedEvents = activeEvents.slice(1);
+  
+  if (!displayedEvent) {
+    container.innerHTML = '<div class="timeline-empty">No high-risk units detected — all systems nominal</div>';
+  } else {
+    const [id, track] = displayedEvent;
+    const now = Date.now();
+    const elapsed = (now - track.startTime) / 1000;
+    
+    const canvasTempId = `fg-temp-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const canvasGasId = `fg-gas-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    
+    let statusClass = track.failed ? 'failed' : track.riskLevel === 'critical' ? 'critical' : '';
+    let statusText;
+    if (track.failed) {
+      const causeText = {
+        'thermal_runaway': `${track.failureMetric?.toFixed(1)}°C`,
+        'h2_critical': `H₂ ${track.failureMetric?.toFixed(0)}ppm`,
+        'c2h2_critical': `C₂H₂ ${track.failureMetric?.toFixed(0)}ppm`,
+        'total_gas_critical': `Gas ${track.failureMetric?.toFixed(0)}ppm`,
+        'composite_risk': `Risk ${track.failureMetric?.toFixed(0)}%`
+      };
+      statusText = `Failed: ${causeText[track.failureCause] || track.failureMetric}`;
+    } else {
+      const mins = Math.floor(elapsed / 60);
+      const secs = Math.floor(elapsed % 60);
+      statusText = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `${secs}s`;
+    }
+    
+    const queueIndicator = queuedEvents.length > 0 ? 
+      `<span style="margin-left:8px;font-size:.62rem;color:var(--amber);background:var(--amber-dim);padding:2px 6px;border-radius:3px">+${queuedEvents.length} queued</span>` : '';
+    
+    const latestPoint = track.timeline[Math.min(track.currentIndex, track.timeline.length - 1)] || track.initial;
+    
+    container.innerHTML = `
+      <div class="fg-item ${statusClass}">
+        <div class="fg-header">
+          <span class="fg-xfmr">${id} — ${track.faultType}${queueIndicator}</span>
+          <span class="fg-status ${statusClass}">${statusText}</span>
+          <button class="fg-dismiss" onclick="dismissFailure('${id}')">✕</button>
+        </div>
+        
+        <div class="fg-main-grid">
+          <div class="fg-graphs">
+            <div class="fg-canvas-wrapper" onclick="expandGraph('${id}', 'temp')">
+              <div class="fg-canvas-label">Temperature & ETT Load</div>
+              <canvas id="${canvasTempId}" class="fg-canvas temp" width="900" height="100"></canvas>
+              <div class="fg-legend">
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ff4757"></div><span>Oil Temp</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ff6b6b"></div><span>High Load</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ffaa00"></div><span>Mid Load</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ffd93d"></div><span>Low Load</span></div>
+              </div>
+            </div>
+            
+            <div class="fg-canvas-wrapper" onclick="expandGraph('${id}', 'gas')">
+              <div class="fg-canvas-label">DGA — Dissolved Gas Analysis</div>
+              <canvas id="${canvasGasId}" class="fg-canvas gas" width="900" height="100"></canvas>
+              <div class="fg-legend">
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#00d9ff"></div><span>H₂</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#0fb9b1"></div><span>CH₄</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#4bcffa"></div><span>C₂H₂</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#20bf6b"></div><span>C₂H₄</span></div>
+                <div class="fg-legend-item"><div class="fg-legend-line" style="background:#26de81"></div><span>C₂H₆</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="fg-variables-grid">
+            ${renderVariableCard('OT', latestPoint.OT, '°C', latestPoint.OT > 100, latestPoint.OT > 95)}
+            ${renderVariableCard('HUFL', latestPoint.HUFL, '', latestPoint.HUFL > 8, latestPoint.HUFL > 6.5)}
+            ${renderVariableCard('HULL', latestPoint.HULL, '', latestPoint.HULL > 3.5, latestPoint.HULL > 2.8)}
+            ${renderVariableCard('MUFL', latestPoint.MUFL, '', latestPoint.MUFL > 7, latestPoint.MUFL > 5.5)}
+            ${renderVariableCard('MULL', latestPoint.MULL, '', latestPoint.MULL > 2.5, latestPoint.MULL > 2)}
+            ${renderVariableCard('LUFL', latestPoint.LUFL, '', latestPoint.LUFL > 6.5, latestPoint.LUFL > 5)}
+            ${renderVariableCard('LULL', latestPoint.LULL, '', latestPoint.LULL > 2.2, latestPoint.LULL > 1.8)}
+            ${renderVariableCard('H₂', latestPoint.h2, 'ppm', latestPoint.h2 > 800, latestPoint.h2 > 400)}
+            ${renderVariableCard('CH₄', latestPoint.ch4, 'ppm', latestPoint.ch4 > 150, latestPoint.ch4 > 80)}
+            ${renderVariableCard('C₂H₂', latestPoint.c2h2, 'ppm', latestPoint.c2h2 > 30, latestPoint.c2h2 > 10)}
+            ${renderVariableCard('C₂H₄', latestPoint.c2h4, 'ppm', latestPoint.c2h4 > 120, latestPoint.c2h4 > 60)}
+            ${renderVariableCard('C₂H₆', latestPoint.c2h6, 'ppm', latestPoint.c2h6 > 80, latestPoint.c2h6 > 40)}
+            ${renderVariableCard('Moisture', latestPoint.moisture, 'ppm', latestPoint.moisture > 40, latestPoint.moisture > 25)}
+            ${renderVariableCard('Vibration', latestPoint.vibration, 'mm/s', latestPoint.vibration > 8, latestPoint.vibration > 5)}
+          </div>
+        </div>
+        
+        <div class="fg-metrics">
+          <div class="fg-metric">
+            <div class="fg-metric-label">Temperature</div>
+            <div class="fg-metric-value ${latestPoint.OT > 100 ? 'critical' : latestPoint.OT > 90 ? 'warning' : 'normal'}">${latestPoint.OT.toFixed(1)}°C</div>
+          </div>
+          <div class="fg-metric">
+            <div class="fg-metric-label">H₂ Level</div>
+            <div class="fg-metric-value ${latestPoint.h2 > 500 ? 'critical' : latestPoint.h2 > 200 ? 'warning' : 'normal'}">${latestPoint.h2.toFixed(0)} ppm</div>
+          </div>
+          <div class="fg-metric">
+            <div class="fg-metric-label">Risk Score</div>
+            <div class="fg-metric-value ${latestPoint.risk > 80 ? 'critical' : latestPoint.risk > 60 ? 'warning' : 'normal'}">${latestPoint.risk.toFixed(1)}%</div>
+          </div>
+        </div>
+        
+        <div class="fg-playback">
+          <button class="fg-playback-btn ${track.isPaused ? '' : 'active'}" onclick="togglePlayback('${id}')">${track.isPaused ? '▶' : '⏸'}</button>
+          <span class="fg-playback-time">${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, '0')}</span>
+          <div class="fg-playback-bar" onclick="seekTimeline(event, '${id}')">
+            <div class="fg-playback-fill" style="width:${(track.currentIndex / track.timeline.length) * 100}%">
+              <div class="fg-playback-marker"></div>
+            </div>
+          </div>
+          <span class="fg-playback-time">${Math.floor(track.projectedFailureTime / 60)}:${String(Math.floor(track.projectedFailureTime % 60)).padStart(2, '0')}</span>
+          <button class="fg-playback-btn ${track.playbackSpeed === 1 ? 'active' : ''}" onclick="changeSpeed('${id}', 1)">1x</button>
+          <button class="fg-playback-btn ${track.playbackSpeed === 5 ? 'active' : ''}" onclick="changeSpeed('${id}', 5)">5x</button>
+          <button class="fg-playback-btn ${track.playbackSpeed === 10 ? 'active' : ''}" onclick="changeSpeed('${id}', 10)">10x</button>
+        </div>
+      </div>
+    `;
+    
+    setTimeout(() => {
+      drawTempGraph(canvasTempId, track);
+      drawGasGraph(canvasGasId, track);
+    }, 10);
+  }
+  
+  const allHistory = [...historyEvents, ...queuedEvents.map(([id, track]) => [id, {...track, queued: true}])];
+  
+  if (allHistory.length > 0) {
+    historyBox.style.display = 'block';
+    
+    historyContainer.innerHTML = allHistory.map(([id, track]) => {
+      const duration = track.failed && track.failureTime ? 
+        Math.floor((track.failureTime - track.startTime) / 1000) : 
+        Math.floor((Date.now() - track.startTime) / 1000);
+      
+      const statusClass = track.queued ? 'queued' : track.failed ? 'failed' : 'resolved';
+      const statusBadge = track.queued ? 'Queued' : track.failed ? 'Failed' : 'Resolved';
+      const statusIcon = track.queued ? '⏳' : track.failed ? '💥' : '✓';
+      
+      const durationMin = Math.floor(duration / 60);
+      const durationSec = duration % 60;
+      const durationText = durationMin > 0 ? `${durationMin}m ${durationSec}s` : `${durationSec}s`;
+      
+      return `
+        <div class="history-item ${statusClass}" onclick="expandGraph('${id}', 'temp')">
+          <div class="history-header">
+            <span class="history-xfmr">${id}</span>
+            <span class="history-badge ${statusClass}">${statusBadge}</span>
+          </div>
+          <div class="history-info">
+            ${statusIcon} ${track.faultType} | ${durationText}
+          </div>
+          <div class="history-time">
+            ${track.queued ? 'Waiting...' : new Date(track.detectedAt).toLocaleString()}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    historyBox.style.display = 'none';
+  }
+}
+
+function expandGraph(id, type) {
+  const track = failureTracking[id];
+  if (!track) return;
+  
+  document.getElementById('modal-title').textContent = `${id} — ${track.faultType} — Full Timeline`;
+  document.getElementById('modal-label-1').textContent = 'Temperature & ETT Load';
+  document.getElementById('modal-label-2').textContent = 'DGA — Dissolved Gas Analysis';
+  
+  document.getElementById('modal-legend-1').innerHTML = `
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ff4757"></div><span>OT</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ff6b6b"></div><span>HUFL</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ffaa00"></div><span>MUFL</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#ffd93d"></div><span>LUFL</span></div>
+  `;
+  document.getElementById('modal-legend-2').innerHTML = `
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#00d9ff"></div><span>H₂</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#0fb9b1"></div><span>CH₄</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#4bcffa"></div><span>C₂H₂</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#20bf6b"></div><span>C₂H₄</span></div>
+    <div class="fg-legend-item"><div class="fg-legend-line" style="background:#26de81"></div><span>C₂H₆</span></div>
+  `;
+  
+  document.getElementById('graph-modal').classList.add('active');
+  
+  setTimeout(() => {
+    drawTempGraphExpanded('modal-canvas-1', track);
+    drawGasGraphExpanded('modal-canvas-2', track);
+  }, 50);
+}
+
+function closeGraphModal() {
+  document.getElementById('graph-modal').classList.remove('active');
+}
+
+function drawTempGraphExpanded(canvasId, track) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  const visibleData = track.timeline;
+  if (visibleData.length < 2) return;
+  
+  const endTime = Math.max(...visibleData.map(p => p.time));
+  
+  const padding = {left: 50, right: 20, top: 20, bottom: 35};
+  const graphW = w - padding.left - padding.right;
+  const graphH = h - padding.top - padding.bottom;
+  
+  const xPos = (time) => padding.left + (time / endTime) * graphW;
+  const yPos = (value, max) => padding.top + graphH - ((value / max) * graphH);
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '11px "DM Sans"';
+  ctx.textAlign = 'right';
+  
+  const tempMax = 120;
+  const tempSteps = [0, 30, 60, 90, 120];
+  tempSteps.forEach(temp => {
+    const y = yPos(temp, tempMax);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+    ctx.fillText(`${temp}°C`, padding.left - 8, y + 4);
+  });
+  
+  ctx.textAlign = 'center';
+  const timeSteps = 10;
+  for (let i = 0; i <= timeSteps; i++) {
+    const t = (i / timeSteps) * endTime;
+    const x = xPos(t);
+    ctx.fillText(`${Math.floor(t)}s`, x, h - padding.bottom + 22);
+  }
+  
+  ctx.strokeStyle = 'rgba(255,71,87,0.4)';
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padding.left, yPos(110, tempMax));
+  ctx.lineTo(w - padding.right, yPos(110, tempMax));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  const drawLine = (dataKey, max, color, lineWidth = 3) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    visibleData.forEach((point, i) => {
+      const x = xPos(point.time);
+      const y = yPos(point[dataKey], max);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  
+  drawLine('LUFL', tempMax, '#ffd93d', 2.5);
+  drawLine('MUFL', tempMax, '#ffaa00', 2.5);
+  drawLine('HUFL', tempMax, '#ff6b6b', 2.5);
+  drawLine('OT', tempMax, '#ff4757', 3.5);
+  
+  if (track.failed && track.failureTime) {
+    const failElapsed = (track.failureTime - track.startTime) / 1000;
+    const fx = xPos(failElapsed);
+    ctx.strokeStyle = '#ff4757';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(fx, padding.top);
+    ctx.lineTo(fx, h - padding.bottom);
+    ctx.stroke();
+  }
+}
+
+function drawGasGraphExpanded(canvasId, track) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  const visibleData = track.timeline;
+  if (visibleData.length < 2) return;
+  
+  const endTime = Math.max(...visibleData.map(p => p.time));
+  
+  const padding = {left: 50, right: 20, top: 20, bottom: 35};
+  const graphW = w - padding.left - padding.right;
+  const graphH = h - padding.top - padding.bottom;
+  
+  const xPos = (time) => padding.left + (time / endTime) * graphW;
+  const yPos = (value, max) => padding.top + graphH - ((value / max) * graphH);
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '11px "DM Sans"';
+  ctx.textAlign = 'right';
+  
+  const gasMax = 2000;
+  const gasSteps = [0, 500, 1000, 1500, 2000];
+  gasSteps.forEach(gas => {
+    const y = yPos(gas, gasMax);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+    ctx.fillText(`${gas}ppm`, padding.left - 8, y + 4);
+  });
+  
+  ctx.textAlign = 'center';
+  const timeSteps = 10;
+  for (let i = 0; i <= timeSteps; i++) {
+    const t = (i / timeSteps) * endTime;
+    const x = xPos(t);
+    ctx.fillText(`${Math.floor(t)}s`, x, h - padding.bottom + 22);
+  }
+  
+  ctx.strokeStyle = 'rgba(0,191,255,0.3)';
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padding.left, yPos(1000, gasMax));
+  ctx.lineTo(w - padding.right, yPos(1000, gasMax));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  const drawLine = (dataKey, max, color, lineWidth = 3) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    visibleData.forEach((point, i) => {
+      const x = xPos(point.time);
+      const y = yPos(point[dataKey], max);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  
+  drawLine('c2h6', gasMax, '#26de81', 2.5);
+  drawLine('c2h4', gasMax, '#20bf6b', 3);
+  drawLine('c2h2', gasMax, '#4bcffa', 3);
+  drawLine('ch4', gasMax, '#0fb9b1', 3);
+  drawLine('h2', gasMax, '#00d9ff', 3.5);
+  
+  if (track.failed && track.failureTime) {
+    const failElapsed = (track.failureTime - track.startTime) / 1000;
+    const fx = xPos(failElapsed);
+    ctx.strokeStyle = '#00d9ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(fx, padding.top);
+    ctx.lineTo(fx, h - padding.bottom);
+    ctx.stroke();
+  }
+}
+
+function dismissFailure(id) {
+  if (failureTracking[id]) {
+    failureTracking[id].dismissed = true;
+    renderFailureTimeline();
+  }
+}
+
+function renderVariableCard(label, value, unit, critical, warning) {
+  const statusClass = critical ? 'critical' : warning ? 'warning' : 'normal';
+  const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
+  return `
+    <div class="fg-var-card ${statusClass}">
+      <div class="fg-var-label">${label}</div>
+      <div class="fg-var-value ${statusClass}">${displayValue}${unit}</div>
+    </div>
+  `;
+}
+
+function drawTempGraph(canvasId, track) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  const now = Date.now();
+  const elapsed = (now - track.startTime) / 1000;
+  
+  let startTime, endTime;
+  
+  if (track.failed) {
+    const failElapsed = (track.failureTime - track.startTime) / 1000;
+    const totalDuration = failElapsed + 600;
+    startTime = -totalDuration * 0.25;
+    endTime = failElapsed;
+  } else if (!track.isActive) {
+    const resolveElapsed = track.resolvedAt ? (track.resolvedAt - track.startTime) / 1000 : elapsed;
+    const totalDuration = resolveElapsed + 600;
+    startTime = -totalDuration * 0.25;
+    endTime = resolveElapsed;
+  } else {
+    const windowSize = 300;
+    if (elapsed < windowSize * 0.75) {
+      startTime = -windowSize * 0.25;
+      endTime = windowSize * 0.75;
+    } else {
+      startTime = elapsed - windowSize * 0.75;
+      endTime = elapsed + windowSize * 0.25;
+    }
+  }
+  
+  const visibleData = track.timeline.filter(p => p.time >= startTime && p.time <= endTime);
+  if (visibleData.length < 2) return;
+  
+  const padding = {left: 55, right: 15, top: 25, bottom: 35};
+  const graphW = w - padding.left - padding.right;
+  const graphH = h - padding.top - padding.bottom;
+  
+  const xPos = (time) => padding.left + ((time - startTime) / (endTime - startTime)) * graphW;
+  
+  const tempValues = visibleData.map(p => p.OT);
+  const loadValues = visibleData.flatMap(p => [p.HUFL, p.MUFL, p.LUFL]);
+  const allVals = [...tempValues, ...loadValues];
+  const minVal = Math.min(...allVals);
+  const maxVal = Math.max(...allVals);
+  const range = maxVal - minVal;
+  const yMin = Math.max(0, minVal - range * 0.15);
+  const yMax = Math.min(140, maxVal + range * 0.15);
+  
+  const yPos = (value) => padding.top + graphH - ((value - yMin) / (yMax - yMin)) * graphH;
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = padding.top + (i / 5) * graphH;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+  }
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '11px "DM Sans"';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 5; i++) {
+    const val = yMin + (i / 5) * (yMax - yMin);
+    const y = padding.top + ((5 - i) / 5) * graphH;
+    ctx.fillText(`${Math.round(val)}°`, padding.left - 8, y + 4);
+  }
+  
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 6; i++) {
+    const t = startTime + (i / 6) * (endTime - startTime);
+    const x = xPos(t);
+    const mins = Math.floor(Math.abs(t) / 60);
+    const secs = Math.floor(Math.abs(t) % 60);
+    const sign = t < 0 ? '-' : '';
+    ctx.fillText(`${sign}${mins}:${String(secs).padStart(2, '0')}`, x, h - padding.bottom + 22);
+  }
+  
+  if (startTime < 0 && endTime > 0) {
+    ctx.strokeStyle = 'rgba(118,185,0,0.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), padding.top);
+    ctx.lineTo(xPos(0), h - padding.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  if (yMin <= 110 && yMax >= 110) {
+    ctx.strokeStyle = 'rgba(255,71,87,0.4)';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, yPos(110));
+    ctx.lineTo(w - padding.right, yPos(110));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  const drawLine = (dataKey, color, width) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    visibleData.forEach((p, i) => {
+      const x = xPos(p.time);
+      const y = yPos(p[dataKey]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+  
+  drawLine('LUFL', '#ffdd59', 3);
+  drawLine('MUFL', '#ffaa00', 3);
+  drawLine('HUFL', '#ff6b6b', 3);
+  drawLine('OT', '#ff4757', 4);
+  
+  if (track.isActive && !track.failed) {
+    const curr = visibleData[Math.min(track.currentIndex, visibleData.length - 1)];
+    if (curr) {
+      ctx.strokeStyle = 'rgba(118,185,0,0.8)';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(xPos(curr.time), padding.top);
+      ctx.lineTo(xPos(curr.time), h - padding.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = 'bold 12px "DM Sans"';
+  ctx.textAlign = 'center';
+  ctx.fillText('Temperature & Load', w / 2, 16);
+}
+
+function drawGasGraph(canvasId, track) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  const now = Date.now();
+  const elapsed = (now - track.startTime) / 1000;
+  
+  let startTime, endTime;
+  
+  if (track.failed) {
+    const failElapsed = (track.failureTime - track.startTime) / 1000;
+    const totalDuration = failElapsed + 600;
+    startTime = -totalDuration * 0.25;
+    endTime = failElapsed;
+  } else if (!track.isActive) {
+    const resolveElapsed = track.resolvedAt ? (track.resolvedAt - track.startTime) / 1000 : elapsed;
+    const totalDuration = resolveElapsed + 600;
+    startTime = -totalDuration * 0.25;
+    endTime = resolveElapsed;
+  } else {
+    const windowSize = 300;
+    if (elapsed < windowSize * 0.75) {
+      startTime = -windowSize * 0.25;
+      endTime = windowSize * 0.75;
+    } else {
+      startTime = elapsed - windowSize * 0.75;
+      endTime = elapsed + windowSize * 0.25;
+    }
+  }
+  
+  const visibleData = track.timeline.filter(p => p.time >= startTime && p.time <= endTime);
+  if (visibleData.length < 2) return;
+  
+  const padding = {left: 60, right: 15, top: 25, bottom: 35};
+  const graphW = w - padding.left - padding.right;
+  const graphH = h - padding.top - padding.bottom;
+  
+  const xPos = (time) => padding.left + ((time - startTime) / (endTime - startTime)) * graphW;
+  
+  const gasVals = visibleData.flatMap(p => [p.h2, p.ch4, p.c2h2, p.c2h4, p.c2h6]);
+  const minVal = Math.min(...gasVals);
+  const maxVal = Math.max(...gasVals);
+  const range = maxVal - minVal;
+  const yMin = Math.max(0, minVal - range * 0.15);
+  const yMax = Math.min(3000, maxVal + range * 0.2);
+  
+  const yPos = (value) => padding.top + graphH - ((value - yMin) / (yMax - yMin)) * graphH;
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = padding.top + (i / 5) * graphH;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+  }
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '11px "DM Sans"';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 5; i++) {
+    const val = yMin + (i / 5) * (yMax - yMin);
+    const y = padding.top + ((5 - i) / 5) * graphH;
+    ctx.fillText(`${Math.round(val)}`, padding.left - 8, y + 4);
+  }
+  
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 6; i++) {
+    const t = startTime + (i / 6) * (endTime - startTime);
+    const x = xPos(t);
+    const mins = Math.floor(Math.abs(t) / 60);
+    const secs = Math.floor(Math.abs(t) % 60);
+    const sign = t < 0 ? '-' : '';
+    ctx.fillText(`${sign}${mins}:${String(secs).padStart(2, '0')}`, x, h - padding.bottom + 22);
+  }
+  
+  if (startTime < 0 && endTime > 0) {
+    ctx.strokeStyle = 'rgba(118,185,0,0.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), padding.top);
+    ctx.lineTo(xPos(0), h - padding.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  if (yMin <= 1000 && yMax >= 1000) {
+    ctx.strokeStyle = 'rgba(0,191,255,0.35)';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, yPos(1000));
+    ctx.lineTo(w - padding.right, yPos(1000));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  if (yMin <= 50 && yMax >= 50) {
+    ctx.strokeStyle = 'rgba(72,219,251,0.35)';
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, yPos(50));
+    ctx.lineTo(w - padding.right, yPos(50));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  const drawLine = (dataKey, color, width) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    visibleData.forEach((p, i) => {
+      const x = xPos(p.time);
+      const y = yPos(p[dataKey]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+  
+  drawLine('c2h6', '#26de81', 3);
+  drawLine('c2h4', '#20bf6b', 3.5);
+  drawLine('c2h2', '#4bcffa', 3.5);
+  drawLine('ch4', '#0fb9b1', 3.5);
+  drawLine('h2', '#00d9ff', 4);
+  
+  if (track.isActive && !track.failed) {
+    const curr = visibleData[Math.min(track.currentIndex, visibleData.length - 1)];
+    if (curr) {
+      ctx.strokeStyle = 'rgba(118,185,0,0.8)';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(xPos(curr.time), padding.top);
+      ctx.lineTo(xPos(curr.time), h - padding.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = 'bold 12px "DM Sans"';
+  ctx.textAlign = 'center';
+  ctx.fillText('Dissolved Gas Analysis (ppm)', w / 2, 16);
+}
+
+function togglePlayback(id) {
+  if (!failureTracking[id]) return;
+  failureTracking[id].isPaused = !failureTracking[id].isPaused;
+  renderFailureTimeline();
+}
+
+function changeSpeed(id, speed) {
+  if (!failureTracking[id]) return;
+  failureTracking[id].playbackSpeed = speed;
+  renderFailureTimeline();
+}
+
+function seekTimeline(event, id) {
+  if (!failureTracking[id]) return;
+  const bar = event.currentTarget;
+  const rect = bar.getBoundingClientRect();
+  const percent = (event.clientX - rect.left) / rect.width;
+  failureTracking[id].currentIndex = Math.floor(percent * failureTracking[id].timeline.length);
+  renderFailureTimeline();
+}
+
+function healthSt(r) {
+  if (r.has_anomaly && r.injected_severity !== undefined) {
+    const sev = r.injected_severity;
+    if (sev >= 0.7) return 'crit';
+    if (sev >= 0.1) return 'warn';
+  }
+  
+  if (r.temperature_c > 95) return 'crit';
+  if (r.temperature_c > 75) return 'warn';
+  return 'ok';
+}
+
+function renderFleet() {
+  let entries = Object.entries(readings);
+  entries.sort((a, b) => {
+    const ra = a[1], rb = b[1];
+    if (sortMode === 'temp') return rb.temperature_c - ra.temperature_c;
+    if (sortMode === 'load') return rb.load_percent - ra.load_percent;
+    if (sortMode === 'oil') return ra.oil_level_percent - rb.oil_level_percent;
+    return 0;
+  });
+
+  document.getElementById('fleet').innerHTML = entries.map(([id, r]) => {
+    const st = healthSt(r);
+    return `<div class="xf ${st}" onclick="openDet('${id}')">
+      <div class="xf-top"><span class="xf-id">${id}</span><span class="xf-dot ${st}"></span></div>
+      <div class="xf-stats">
+        <div class="xf-s"><span class="xf-sv">${r.temperature_c}°</span><span class="xf-sl">Temp</span></div>
+        <div class="xf-s"><span class="xf-sv">${r.load_percent.toFixed(0)}%</span><span class="xf-sl">Load</span></div>
+        <div class="xf-s"><span class="xf-sv">${r.oil_level_percent}%</span><span class="xf-sl">Oil</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  document.getElementById('al-cnt').textContent = alerts.length;
+  document.getElementById('al-list').innerHTML = alerts.slice(0, 12).map(a => `
+    <div class="al ${a.severity}">
+      <span class="al-dot ${a.severity}"></span>
+      <div class="al-body">
+        <span class="al-src">${a.source}</span>
+        <span style="font-size:.65rem;color:var(--text-3);margin-left:4px">${a.transformer_id}</span>
+        <div class="al-msg">${a.message}</div>
+        <div class="al-time">${new Date(a.timestamp).toLocaleTimeString()}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">No alerts — all systems nominal</div>';
+}
+
+function renderChart() {
+  const d = loadHistory.length > 0 ? loadHistory : Array(24).fill(50);
+  document.getElementById('chart').innerHTML = d.map((v, i) =>
+    `<div class="chart-bar ${i%2===0?'n':'c'}" style="height:${Math.max(5,v)}%"></div>`
+  ).join('');
+}
+
+function go(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`view-${v}`).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if ((v==='dashboard' && t.textContent.includes('Dashboard')) ||
+        (v==='chat' && t.textContent.includes('Ask'))) t.classList.add('active');
+  });
+}
+
+function setSort(m, el) {
+  sortMode = m;
+  document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderFleet();
+}
+
+function openDet(id) {
+  selXfmr = id;
+  document.getElementById('d-id').textContent = id;
+  document.getElementById('a-panel').style.display = 'none';
+  renderDetail(id);
+  go('detail');
+}
+
+function renderDetail(id) {
+  const r = readings[id];
+  if (!r) return;
+  document.getElementById('d-ts').textContent = `Last: ${new Date(r.timestamp).toLocaleTimeString()}`;
+
+  const stf = (v, w, c) => v >= c ? 'crit' : v >= w ? 'warn' : 'ok';
+  const sensors = [
+    { i:'🌡️', l:'Temperature', v:`${r.temperature_c}°C`, s:stf(r.temperature_c,75,85) },
+    { i:'⚡', l:'Load', v:`${r.load_percent}%`, s:stf(r.load_percent,80,95) },
+    { i:'🛢️', l:'Oil Level', v:`${r.oil_level_percent}%`, s:r.oil_level_percent<80?'warn':'ok' },
+    { i:'📐', l:'Power Factor', v:r.power_factor, s:r.power_factor<.92?'warn':'ok' },
+    { i:'💧', l:'Moisture', v:`${r.moisture_ppm} ppm`, s:stf(r.moisture_ppm,20,35) },
+    { i:'📳', l:'Vibration', v:`${r.vibration_mm_s} mm/s`, s:stf(r.vibration_mm_s,5,8) },
+  ];
+  
+  document.getElementById('s-grid').innerHTML = sensors.map(s =>
+    `<div class="sensor ${s.s}"><div class="sensor-icon">${s.i}</div><div class="sensor-label">${s.l}</div><div class="sensor-val">${s.v}</div><span class="sensor-st ${s.s}">${s.s==='ok'?'healthy':s.s}</span></div>`
+  ).join('');
+
+  const gases = [
+    {n:'H₂',v:r.dga.h2,w:100,c:200},{n:'CH₄',v:r.dga.ch4,w:50,c:100},
+    {n:'C₂H₂',v:r.dga.c2h2,w:2,c:10},{n:'C₂H₄',v:r.dga.c2h4,w:20,c:50},
+    {n:'C₂H₆',v:r.dga.c2h6,w:15,c:40},
+  ];
+  document.getElementById('d-grid').innerHTML = gases.map(g => {
+    const st = g.v>=g.c?'crit':g.v>=g.w?'warn':'ok';
+    const pct = Math.min(100,(g.v/g.c)*100);
+    const nameColor = st==='crit'?'var(--red)':st==='warn'?'var(--amber)':'var(--green)';
+    const valColor = st==='crit'?'var(--red)':st==='warn'?'var(--amber)':'var(--text-0)';
+    return `<div class="dga ${st}"><div class="dga-name" style="color:${nameColor}">${g.n}</div><div class="dga-val" style="color:${valColor}">${g.v.toFixed(1)} ppm</div><div class="dga-bar"><div class="dga-bf ${st}" style="width:${pct}%"></div></div><div class="dga-th"><span>W:${g.w}</span><span>C:${g.c}</span></div></div>`;
+  }).join('');
+}
+
+async function runPredict() {
+  const btn = document.getElementById('a-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running AI Pipeline...';
+
+  try {
+    const resp = await fetch(`${API}/api/transformers/${selXfmr}/analyze`);
+    const j = await resp.json();
+    
+    let html = '';
+
+    if (j.ett_analysis) {
+      const e = j.ett_analysis;
+      const feat = e.engineered_features || {};
+      html += `<div class="ai-c"><div class="ai-ct">📊 ETT Anomaly Detector<span class="ai-cm">Physics-Informed 96%</span></div>
+        <div class="ai-f"><span class="ai-fl">Risk Score</span><span class="ai-fv">${e.risk_score.toFixed(1)}%</span></div>
+        <div class="ai-f"><span class="ai-fl">Status</span><span class="ai-fv">${e.status}</span></div>
+        <div class="ai-f"><span class="ai-fl">Recommendation</span><span class="ai-fv" style="font-size:.7rem">${e.recommendation}</span></div>`;
+      
+      // Add engineered features if available
+      if (Object.keys(feat).length > 0) {
+        html += `<div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border)">
+          <div style="font-size:.68rem;color:var(--text-3);margin-bottom:.3rem;font-weight:600">Engineered Features:</div>
+          <div style="max-height:120px;overflow-y:auto;font-size:.7rem">
+            <div class="ai-f"><span class="ai-fl">Thermal Stress</span><span class="ai-fv">${feat.thermal_stress}</span></div>
+            <div class="ai-f"><span class="ai-fl">Total Load</span><span class="ai-fv">${feat.total_load}</span></div>
+            <div class="ai-f"><span class="ai-fl">Load Variance</span><span class="ai-fv">${feat.load_variance}</span></div>
+            <div class="ai-f"><span class="ai-fl">Load Span</span><span class="ai-fv">${feat.load_span}</span></div>
+            <div class="ai-f"><span class="ai-fl">Load Differential</span><span class="ai-fv">${feat.load_differential}</span></div>
+            <div class="ai-f"><span class="ai-fl">Thermal×Load</span><span class="ai-fv">${feat.thermal_load_interaction}</span></div>
+            <div class="ai-f"><span class="ai-fl">Arrhenius Factor</span><span class="ai-fv">${feat.arrhenius_factor}</span></div>
+            <div class="ai-f"><span class="ai-fl">Aging Acceleration</span><span class="ai-fv">${feat.aging_acceleration}h</span></div>
+            <div class="ai-f"><span class="ai-fl">Imbalance (High)</span><span class="ai-fv">${feat.imbalance_high}</span></div>
+            <div class="ai-f"><span class="ai-fl">Imbalance (Mid)</span><span class="ai-fv">${feat.imbalance_mid}</span></div>
+            <div class="ai-f"><span class="ai-fl">Imbalance (Low)</span><span class="ai-fv">${feat.imbalance_low}</span></div>
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    if (j.dga_analysis) {
+      const d = j.dga_analysis;
+      const q = d.quantum_analysis;
+      
+      // Check if Rogers/Duval/Quantum indicate Partial Discharge
+      const rogersIsPD = d.rogers_method && d.rogers_method.includes('Partial');
+      const duvalIsPD = d.duval_triangle === 'PD';
+      const quantumIsPD = q && q.quantum_class && q.quantum_class.includes('Partial');
+      
+      // Count PD votes
+      const pdVotes = [rogersIsPD, duvalIsPD, quantumIsPD].filter(Boolean).length;
+      
+      let overallPrediction;
+      let consensusStrength = 0;
+      
+      // If 2 or more methods say Partial Discharge, override ensemble
+      if (pdVotes >= 2) {
+        overallPrediction = 'Partial Discharge';
+        consensusStrength = pdVotes;
+      } else {
+        // Otherwise use voting system
+        const votes = {};
+        [d.fault_type, d.rogers_method, d.duval_triangle, q?.quantum_class].forEach(v => {
+          if (!v) return;
+          // Normalize names
+          let normalized = v;
+          if (v.includes('Thermal')) normalized = 'Thermal';
+          else if (v.includes('Discharge') && !v.includes('Partial')) normalized = 'Discharge';
+          else if (v.includes('Partial')) normalized = 'Partial Discharge';
+          else if (v.includes('Arcing')) normalized = 'Arcing';
+          else if (v === 'Normal') normalized = 'Normal';
+          
+          votes[normalized] = (votes[normalized] || 0) + 1;
+        });
+        
+        overallPrediction = Object.entries(votes).sort((a,b) => b[1] - a[1])[0]?.[0] || d.fault_type;
+        consensusStrength = Math.max(...Object.values(votes));
+      }
+      
+      // Calculate risk level from confidence and severity
+      const riskLevel = d.confidence >= 0.75 ? 'HIGH_RISK' : 
+                        d.confidence >= 0.5 ? 'MODERATE_RISK' : 'NORMAL';
+      
+      const agreement = consensusStrength >= 3 ? '✓ Strong Agreement' : '⚠ Mixed Signals';
+      
+      // Display PD properly everywhere
+      const displayRogers = d.rogers_method ? d.rogers_method.replace('Partial', 'Partial Discharge') : 'N/A';
+      const displayDuval = d.duval_triangle === 'PD' ? 'Partial Discharge' : d.duval_triangle || 'N/A';
+      const displayQuantum = q?.quantum_class ? q.quantum_class.replace('Partial', 'Partial Discharge') : 'N/A';
+      
+      html += `<div class="ai-c"><div class="ai-ct">🧪 Multi-Method DGA Analysis<span class="ai-cm">4 Independent Methods</span></div>
+        <div class="ai-f"><span class="ai-fl">Fault Type</span><span class="ai-fv">${overallPrediction}</span></div>
+        <div class="ai-f"><span class="ai-fl">Consensus</span><span class="ai-fv">${agreement}</span></div>
+        <div class="ai-f"><span class="ai-fl">Recommendation</span><span class="ai-fv" style="font-size:.7rem">${d.recommendation}</span></div>
+        <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border)">
+          <div style="font-size:.68rem;color:var(--text-3);margin-bottom:.3rem;font-weight:600">Diagnostic Methods:</div>
+          <div class="diagnostic-scroll">
+            <div class="ai-f" style="padding:.15rem 0;border:none"><span class="ai-fl">Ensemble</span><span class="ai-fv">${d.fault_type}</span></div>
+            <div class="ai-f" style="padding:.15rem 0;border:none"><span class="ai-fl">Rogers (IEEE)</span><span class="ai-fv">${displayRogers}</span></div>
+            <div class="ai-f" style="padding:.15rem 0;border:none"><span class="ai-fl">Duval (IEC)</span><span class="ai-fv">${displayDuval}</span></div>
+            <div class="ai-f" style="padding:.15rem 0;border:none"><span class="ai-fl">Quantum VQC</span><span class="ai-fv">${displayQuantum}</span></div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    if (j.cerebras_predictor) {
+      const c = j.cerebras_predictor;
+      html += `<div class="ai-c"><div class="ai-ct">🧠 Cerebras Predictor<span class="ai-cm">Llama 3.3 70B (~${c.tokens_per_second} tok/s)</span></div>
+        <div class="ai-f"><span class="ai-fl">Trend</span><span class="ai-fv">${c.trend}</span></div>
+        <div class="ai-f"><span class="ai-fl">Risk Score</span><span class="ai-fv">${(c.risk_score*100).toFixed(1)}%</span></div>
+        <div class="ai-f"><span class="ai-fl">Rate of Change</span><span class="ai-fv">${c.rate_of_change.toFixed(3)}</span></div>
+        <div class="ai-f"><span class="ai-fl">Hours to Threshold</span><span class="ai-fv">${c.predicted_hours ?? 'N/A'}</span></div>
+        <div class="ai-f"><span class="ai-fl">DGA Score</span><span class="ai-fv">${(c.dga_score*100).toFixed(1)}%</span></div>
+      </div>`;
+    }
+
+    if (!j.dga_analysis && j.ett_analysis && j.ett_analysis.risk_score < 50) {
+      html += `<div class="empty" style="grid-column:1/-1;color:var(--green)">✓ ETT risk below 50% — DGA analysis not required. Transformer operating normally.</div>`;
+    }
+
+    document.getElementById('a-grid').innerHTML = html;
+    document.getElementById('a-panel').style.display = 'block';
+  } catch (err) {
+    document.getElementById('a-grid').innerHTML = `<div class="empty" style="grid-column:1/-1">⚠ Backend connection failed: ${err.message}<br>Start backend: <code>cd backend && python main.py</code></div>`;
+    document.getElementById('a-panel').style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🧠 Run Full AI Analysis';
+}
+
+function qChat(msg) { document.getElementById('ci').value = msg; sendMsg(); }
+
+async function sendMsg() {
+  const input = document.getElementById('ci');
+  const msg = input.value.trim();
+  if (!msg || chatBusy) return;
+
+  input.value = '';
+  chatBusy = true;
+  document.getElementById('sb').disabled = true;
+
+  const cb = document.getElementById('cb');
+  cb.innerHTML += `<div class="msg user"><div class="msg-av">👤</div><div><div class="msg-bubble">${esc(msg)}</div><div class="msg-meta">${new Date().toLocaleTimeString()}</div></div></div>`;
+  cb.scrollTop = cb.scrollHeight;
+
+  try {
+    const resp = await fetch(`${API}/api/chat`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg }),
+    });
+    const j = await resp.json();
+    cb.innerHTML += `<div class="msg"><div class="msg-av">⚡</div><div><div class="msg-bubble">${j.response}</div><div class="msg-meta">${new Date().toLocaleTimeString()}</div></div></div>`;
+  } catch (err) {
+    cb.innerHTML += `<div class="msg"><div class="msg-av">⚡</div><div><div class="msg-bubble">⚠ Backend not reachable</div><div class="msg-meta">Error</div></div></div>`;
+  }
+
+  cb.scrollTop = cb.scrollHeight;
+  chatBusy = false;
+  document.getElementById('sb').disabled = false;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+let selectedFault = 'thermal';
+
+function updateSevLabel(val) {
+  const sevEl = document.getElementById('sev-val');
+  let label = '';
+  let color = '';
+  
+  if (val < 40) {
+    label = 'LOW';
+    color = 'var(--green)';  // Green for low
+  } else if (val < 70) {
+    label = 'MED';
+    color = 'var(--amber)';  // Orange for medium
+  } else {
+    label = 'HIGH';
+    color = 'var(--red)';  // Red for high
+  }
+  
+  sevEl.textContent = `${val}% ${label}`;
+  sevEl.style.color = color;
+  
+  // Also update slider thumb color
+  const slider = document.getElementById('inj-sev');
+  if (val < 40) {
+    slider.style.setProperty('--thumb-color', 'var(--green)');
+  } else if (val < 70) {
+    slider.style.setProperty('--thumb-color', 'var(--amber)');
+  } else {
+    slider.style.setProperty('--thumb-color', 'var(--red)');
+  }
+}
+
+function populateInjectorSelect() {
+  const sel = document.getElementById('inj-xfmr');
+  sel.innerHTML = '<option value="">Select transformer…</option>';
+  for (let i = 1; i <= 20; i++) {
+    const id = `XFMR-${String(i).padStart(3,'0')}`;
+    sel.innerHTML += `<option value="${id}">${id}</option>`;
+  }
+}
+
+function pickFault(el) {
+  document.querySelectorAll('.fault-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  selectedFault = el.dataset.f;
+}
+
+async function fireInjection() {
+  const xfmr = document.getElementById('inj-xfmr').value;
+  const sev = parseInt(document.getElementById('inj-sev').value) / 100;
+  const status = document.getElementById('inj-status');
+
+  if (!xfmr) {
+    status.className = 'inj-status err';
+    status.textContent = 'Select a transformer first';
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${API}/api/demo/inject-anomaly`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ transformer_id: xfmr, fault_type: selectedFault, severity: sev }),
+    });
+    const j = await resp.json();
+    status.className = 'inj-status ok';
+    const faultNames = {
+      'thermal': 'Thermal Fault',
+      'discharge': 'Discharge',
+      'arcing': 'Arcing',
+      'partial_discharge': 'Partial Discharge'
+    };
+    
+    // Color-coded expected risk
+    let expectedRisk = '';
+    let riskColor = '';
+    if (sev < 0.4) {
+      expectedRisk = '15-45% risk';
+      riskColor = '🟢';
+    } else if (sev < 0.7) {
+      expectedRisk = '45-75% risk';
+      riskColor = '🟠';
+    } else {
+      expectedRisk = '75-95% risk';
+      riskColor = '🔴';
+    }
+    
+    status.textContent = `${riskColor} ${faultNames[selectedFault]} → ${xfmr} (${Math.round(sev*100)}%) — Expected: ${expectedRisk}`;
+    
+    // Voice announcement
+    const announcement = `Injecting ${j.fault_label} into ${xfmr} at ${Math.round(sev*100)} percent severity. Expected risk level: ${expectedRisk}.`;
+    speak(announcement);
+  } catch (err) {
+    status.className = 'inj-status err';
+    status.textContent = '⚠ Backend not reachable';
+  }
+}
+
+async function resetInjections() {
+  const status = document.getElementById('inj-status');
+  try {
+    const resp = await fetch(`${API}/api/demo/reset`, { method: 'POST' });
+    const j = await resp.json();
+    status.className = 'inj-status ok';
+    status.textContent = `↺ Reset — ${j.cleared} faults cleared`;
+  } catch (err) {
+    status.className = 'inj-status err';
+    status.textContent = '⚠ Backend not reachable';
+  }
+}
+
+// ═══════════════════════════════════════
+// VOICE ASSISTANT — Web Speech API
+// ═══════════════════════════════════════
+
+let recognition = null;
+let isListening = false;
+let ttsEnabled = true;
+const synth = window.speechSynthesis;
+
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voice-status').textContent = 'Speech not supported in this browser';
+    return;
+  }
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (e) => {
+    const result = e.results[e.resultIndex];
+    const text = result[0].transcript;
+    const tEl = document.getElementById('voice-transcript');
+    tEl.textContent = text;
+    tEl.classList.add('show');
+
+    if (result.isFinal) {
+      processVoiceCommand(text.toLowerCase());
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    updateMicUI();
+    document.getElementById('voice-status').innerHTML = 'Click 🎤 to start';
+  };
+
+  recognition.onerror = (e) => {
+    isListening = false;
+    updateMicUI();
+    if (e.error !== 'no-speech') {
+      document.getElementById('voice-status').textContent = `Error: ${e.error}`;
+    }
+  };
+}
+
+function toggleMic() {
+  if (!recognition) { initVoice(); if (!recognition) return; }
+  if (isListening) {
+    recognition.stop();
+    isListening = false;
+  } else {
+    document.getElementById('voice-transcript').textContent = '';
+    document.getElementById('voice-transcript').classList.remove('show');
+    document.getElementById('voice-response').classList.remove('show');
+    recognition.start();
+    isListening = true;
+    document.getElementById('voice-status').innerHTML = '<span class="listening-dot"></span> Listening...';
+  }
+  updateMicUI();
+}
+
+function updateMicUI() {
+  document.querySelectorAll('.mic-btn').forEach(b => {
+    b.classList.toggle('listening', isListening);
+  });
+}
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('tts-btn');
+  btn.textContent = ttsEnabled ? '🔊' : '🔇';
+  btn.classList.toggle('on', ttsEnabled);
+  if (!ttsEnabled) synth.cancel();
+}
+
+function speak(text) {
+  if (!ttsEnabled) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 1.05;
+  utt.pitch = 1.0;
+  utt.onstart = () => {
+    document.getElementById('voice-status').innerHTML = '<span class="speaking-dot"></span> Speaking...';
+  };
+  utt.onend = () => {
+    document.getElementById('voice-status').textContent = 'Click 🎤 to start';
+  };
+  synth.speak(utt);
+}
+
+function processVoiceCommand(text) {
+  const rEl = document.getElementById('voice-response');
+  let response = '';
+
+  if (text.includes('grid status') || text.includes('fleet status') || text.includes('how is the grid') || text.includes('health')) {
+    const hp = document.getElementById('m-hp').textContent;
+    const al = alerts.length;
+    const crit = alerts.filter(a => a.severity === 'critical').length;
+    response = `Fleet health score is ${hp}. ${al} active alerts, ${crit} critical. All 20 transformers online.`;
+  }
+  else if (text.includes('fault') || text.includes('which transformer') || text.includes('problem') || text.includes('issue')) {
+    const faultyIds = Object.entries(readings)
+      .filter(([id, r]) => r.has_anomaly || r.temperature_c > 75 || r.dga.h2 > 100)
+      .map(([id]) => id);
+    if (faultyIds.length > 0) {
+      response = `${faultyIds.length} transformers showing issues: ${faultyIds.join(', ')}. Check the dashboard for details.`;
+    } else {
+      response = 'All transformers are within normal parameters. No active faults detected.';
+    }
+  }
+  else if (text.includes('inject')) {
+    const numMatch = text.match(/(\d+)/);
+    if (!numMatch) {
+      response = 'Which transformer? Say inject thermal into transformer 15.';
+    } else {
+      const xfmrId = `XFMR-${numMatch[1].padStart(3, '0')}`;
+      let faultType = 'thermal';
+      if (text.includes('discharge')) faultType = 'discharge';
+      else if (text.includes('arcing') || text.includes('arc')) faultType = 'arcing';
+      else if (text.includes('partial')) faultType = 'partial_discharge';
+
+      let severity = 0.7;
+      if (text.includes('mild') || text.includes('minor')) severity = 0.4;
+      else if (text.includes('severe') || text.includes('critical')) severity = 0.9;
+
+      fetch(`${API}/api/demo/inject-anomaly`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ transformer_id: xfmrId, fault_type: faultType, severity }),
+      }).then(r => r.json()).then(j => {
+        const msg = `Injecting ${j.fault_label} into ${xfmrId} at ${Math.round(severity*100)}% severity.`;
+        rEl.textContent = msg;
+        rEl.classList.add('show');
+        speak(msg);
+        document.getElementById('inj-status').className = 'inj-status ok';
+        document.getElementById('inj-status').textContent = `🔥 ${j.fault_label} → ${xfmrId}`;
+      }).catch(() => speak('Backend not reachable.'));
+      return;
+    }
+  }
+  else if (text.includes('reset') || text.includes('clear')) {
+    fetch(`${API}/api/demo/reset`, { method: 'POST' })
+      .then(r => r.json()).then(j => {
+        const msg = `Cleared ${j.cleared} injected faults. Grid returning to normal.`;
+        rEl.textContent = msg;
+        rEl.classList.add('show');
+        speak(msg);
+        document.getElementById('inj-status').className = 'inj-status ok';
+        document.getElementById('inj-status').textContent = `↺ Reset complete`;
+      });
+    return;
+  }
+  else if (text.includes('alert') || text.includes('warning') || text.includes('alarm')) {
+    if (alerts.length > 0) {
+      const top = alerts.slice(0, 3).map(a => `${a.transformer_id}: ${a.message}`).join('. ');
+      response = `${alerts.length} active alerts. Top issues: ${top}`;
+    } else {
+      response = 'No active alerts. All systems nominal.';
+    }
+  }
+  else if (text.includes('temperature') || text.includes('temp') || text.includes('hot')) {
+    const hottest = Object.entries(readings)
+      .sort((a, b) => b[1].temperature_c - a[1].temperature_c)
+      .slice(0, 3);
+    response = `Hottest transformers: ${hottest.map(([id, r]) => `${id} at ${r.temperature_c} degrees`).join(', ')}.`;
+  }
+  else if (text.includes('help') || text.includes('what can you do')) {
+    response = 'I can report grid status, list faults and alerts, inject demo anomalies, check temperatures, and reset faults. Try saying grid status or inject thermal into transformer 15.';
+  }
+  else {
+    document.getElementById('ci').value = text;
+    sendMsg();
+    response = 'Sending your question to the chat...';
+  }
+
+  rEl.textContent = response;
+  rEl.classList.add('show');
+  speak(response);
+}
+
+populateInjectorSelect();
+renderChart();
+connectWS();
+initVoice();
+</script>
+</body>
+</html>
